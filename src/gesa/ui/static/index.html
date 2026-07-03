@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gesa Mo Volata</title>
+<style>
+  :root {
+    --green: #2e6f3e;
+    --green-dark: #1f4d2b;
+    --bg: #f6f5ef;
+    --card: #ffffff;
+    --text: #23291f;
+    --muted: #5c6659;
+    --border: #d9d6c8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.4;
+  }
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px 48px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  header h1 {
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+    color: var(--green-dark);
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  form {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  textarea, select {
+    width: 100%;
+    font-size: 1rem;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+  }
+  textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+  .row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+  }
+  .row > div { flex: 1; }
+  button {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled {
+    background: #9aab97;
+    cursor: default;
+  }
+  button:not(:disabled):hover {
+    background: var(--green-dark);
+  }
+  #status {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: var(--muted);
+    text-align: center;
+    min-height: 1.2em;
+  }
+  #status.error {
+    color: #a6302c;
+  }
+  #result {
+    margin-top: 20px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .card h3 {
+    margin: 0 0 6px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--green);
+  }
+  .card pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 8px;
+  }
+  .answer {
+    background: var(--green-dark);
+    color: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 1.05rem;
+  }
+  .answer h3 {
+    margin: 0 0 6px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #cfe6d3;
+  }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Gesa Mo Volata</h1>
+    <p>Offline farm planning assistant</p>
+  </header>
+
+  <form id="plan-form">
+    <div>
+      <label for="request">What do you need help planning?</label>
+      <textarea id="request" name="request" placeholder="e.g. I have 2 hectares for maize and beans, plan my intercropping and inputs." required></textarea>
+    </div>
+    <div class="row">
+      <div>
+        <label for="lang">Language</label>
+        <select id="lang" name="lang">
+          <option value="en">English</option>
+          <option value="ff">Fulfulde</option>
+        </select>
+      </div>
+    </div>
+    <button type="submit" id="submit-btn">Get Plan</button>
+    <div id="status"></div>
+  </form>
+
+  <div id="result"></div>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById('plan-form');
+  var statusEl = document.getElementById('status');
+  var resultEl = document.getElementById('result');
+  var submitBtn = document.getElementById('submit-btn');
+
+  function clearResult() {
+    resultEl.innerHTML = '';
+  }
+
+  function renderResult(data) {
+    clearResult();
+    var steps = data.steps || [];
+    steps.forEach(function (step, i) {
+      var card = document.createElement('div');
+      card.className = 'card';
+      var h3 = document.createElement('h3');
+      h3.textContent = 'Step ' + (i + 1) + ': ' + step.tool;
+      var pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(step.result, null, 2);
+      card.appendChild(h3);
+      card.appendChild(pre);
+      resultEl.appendChild(card);
+    });
+
+    var answerBox = document.createElement('div');
+    answerBox.className = 'answer';
+    var h3 = document.createElement('h3');
+    h3.textContent = 'Plan';
+    var p = document.createElement('p');
+    p.style.margin = '0';
+    p.textContent = data.answer || '(no answer returned)';
+    answerBox.appendChild(h3);
+    answerBox.appendChild(p);
+    resultEl.appendChild(answerBox);
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var requestText = document.getElementById('request').value.trim();
+    var lang = document.getElementById('lang').value;
+    if (!requestText) {
+      return;
+    }
+
+    clearResult();
+    statusEl.textContent = 'Thinking...';
+    statusEl.classList.remove('error');
+    submitBtn.disabled = true;
+
+    fetch('/plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request: requestText, lang: lang })
+    })
+      .then(function (resp) {
+        if (!resp.ok) {
+          return resp.text().then(function (text) {
+            throw new Error('Server error (' + resp.status + '): ' + text);
+          });
+        }
+        return resp.json();
+      })
+      .then(function (data) {
+        statusEl.textContent = '';
+        renderResult(data);
+      })
+      .catch(function (err) {
+        statusEl.textContent = err.message || 'Something went wrong.';
+        statusEl.classList.add('error');
+      })
+      .finally(function () {
+        submitBtn.disabled = false;
+      });
+  });
+})();
+</script>
+</body>
+</html>

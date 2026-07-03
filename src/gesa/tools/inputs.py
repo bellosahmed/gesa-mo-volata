@@ -1,0 +1,36 @@
+from gesa.agronomy import SPACING, LEGUME_N_CREDIT_KG_HA
+from gesa.units import resolve_area_m2
+
+UREA_N_FRACTION = 0.46
+
+def input_allocator(area_m2=None, crops=None, urea_kg=None, area_value=None, area_unit=None) -> dict:
+    """Allocate available urea across crops in proportion to nitrogen need.
+
+    Applies legume N-credit to intercropped non-legumes and flags whether the available nitrogen is sufficient.
+    """
+    area_m2 = resolve_area_m2(area_m2, area_value, area_unit)
+    if urea_kg is None:
+        raise ValueError("urea_kg is required")
+    crops = crops or []
+    for c in crops:
+        if c not in SPACING:
+            raise ValueError(f"unknown crop: {c!r}")
+    if not crops:
+        raise ValueError("crops must not be empty")
+    if len(crops) != len(set(crops)):
+        raise ValueError(f"duplicate crops: {crops}")
+    ha = area_m2 / 10000.0
+    has_legume = any(SPACING[c]["legume"] for c in crops)
+    needs = {}
+    for c in crops:
+        need = SPACING[c]["n_need_kg_ha"] * ha
+        if not SPACING[c]["legume"] and has_legume:
+            need = max(0.0, need - LEGUME_N_CREDIT_KG_HA * ha)
+        needs[c] = need
+    required = sum(needs.values())
+    available_n = urea_kg * UREA_N_FRACTION
+    # Avoid division-by-zero when total need is 0 (e.g., zero area); in that case every allocation is 0.
+    total_need = required or 1.0
+    allocation = {c: round((needs[c] / total_need) * urea_kg, 2) for c in crops}
+    return {"required_n_kg": required, "urea_available_n_kg": available_n,
+            "sufficient": available_n >= required, "allocation": allocation}
