@@ -136,11 +136,17 @@ quality; a final whole-branch review preceded merge. **44+ automated tests**, al
 review process caught and fixed include an invalid-JSON grammar bug, a crash on empty crop input, and
 missing agent-loop error containment.
 
-## 10. Open items before final submission
+## 10. Improvements made from live evidence, and remaining open items
 
+**Done (verified live):** unit conversion is now deterministic. Tools accept the plot as
+`area_value` + `area_unit`; `normalize_area` converts in code. Confirmed with the real model:
+"half an acre" now resolves to **2023.43 m²** (correct), where the model alone had guessed 500 m².
+
+**Remaining before final submission:**
 - Verify Fulfulde locale strings with a native speaker.
-- Wire `normalize_area` into the request path so unit conversion (acre/hectare/plot → m²) is
-  deterministic rather than model-performed.
 - Emit key advisory lines (e.g. insufficient-urea, planting-window count) via the locale layer
   deterministically, rather than relying on model phrasing.
-- Run the full 3-model bake-off and the benchmark on the actual target-profile laptop.
+- Improve reliability of enum-style args (`region`/`season`) — the 1.5B fallback failed the scheduler
+  call; expected to improve with the 3B primary model and richer prompt examples.
+- Run the full 3-model bake-off and the benchmark on the actual target-profile laptop; capture the
+  UI screenshots and the 2-minute demo video.
