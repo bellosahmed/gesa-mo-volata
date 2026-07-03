@@ -1,0 +1,369 @@
+<title>Shamba Planner — Architecture</title>
+<style>
+  :root {
+    --ground: #EDF1EC;
+    --paper: #FFFFFF;
+    --ink: #14211A;
+    --ink-soft: #51605700;
+    --muted: #5A685F;
+    --line: #C4D0BE;
+    --sap: #1F7A43;        /* crops / primary accent */
+    --sap-deep: #145C31;
+    --amber: #B77A1E;      /* scarcity / budget theme */
+    --acc-accuracy: #1F7A43;
+    --acc-speed:    #256E9C;
+    --acc-effic:    #6B4FB0;
+    --acc-penalty:  #B0472A;
+    --border: #D6E0D2;
+    --shadow: 0 1px 2px rgba(20,33,26,.06), 0 6px 20px rgba(20,33,26,.05);
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #E4EEE0 0%, rgba(228,238,224,0) 60%),
+      var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 40px 24px 72px; }
+
+  /* ---- header ---- */
+  header { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--sap-deep); font-weight: 600;
+  }
+  h1 {
+    font-size: clamp(30px, 5vw, 46px); line-height: 1.04; margin: 0;
+    letter-spacing: -.02em; text-wrap: balance; font-weight: 800;
+  }
+  h1 .dim { color: var(--muted); font-weight: 700; }
+  .lede { font-size: 17px; color: var(--muted); max-width: 60ch; margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .chip {
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    padding: 5px 11px; border-radius: 999px;
+    background: #fff; border: 1px solid var(--border); color: var(--ink);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sap); }
+  .chip.warn .dot { background: var(--amber); }
+
+  /* ---- diagram frame (the 7GB boundary) ---- */
+  .frame {
+    position: relative;
+    border: 1.5px dashed #B6C6AE;
+    border-radius: 16px;
+    padding: 30px 22px 26px;
+    background: linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,.15));
+    margin-top: 8px;
+  }
+  .frame-tag {
+    position: absolute; top: -12px; left: 20px;
+    font-family: var(--mono); font-size: 11.5px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+    color: var(--amber); background: var(--ground); padding: 2px 10px;
+    border-radius: 6px;
+  }
+  .diagram { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+
+  .layer { display: grid; grid-template-columns: 92px 1fr; gap: 16px; align-items: center; }
+  .layer-label {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+    text-align: right; line-height: 1.35;
+  }
+
+  .node {
+    background: var(--paper); border: 1px solid var(--border);
+    border-radius: 12px; padding: 15px 17px; box-shadow: var(--shadow);
+    position: relative;
+  }
+  .node h3 { margin: 0; font-size: 15.5px; letter-spacing: -.01em; }
+  .node p { margin: 5px 0 0; font-size: 13px; color: var(--muted); }
+  .node .tag {
+    position: absolute; top: 13px; right: 14px;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    color: var(--sap-deep); background: #EAF3EA; border: 1px solid #CDE4CC;
+    padding: 2px 7px; border-radius: 6px;
+  }
+  .node.model { border-color: #CDE4CC; background: linear-gradient(180deg,#F6FBF5,#fff); }
+  .node.output { border-color: #CDE4CC; }
+
+  /* orchestrator with side guard */
+  .orch-row { display: grid; grid-template-columns: 1fr 200px; gap: 14px; align-items: stretch; }
+  .node.orch { border-color: #C7D9C2; background: linear-gradient(180deg,#F3F9F1,#fff); }
+  .guard {
+    background: #FBF4E7; border: 1px dashed #E0C48A; border-radius: 12px;
+    padding: 13px 14px; display: flex; flex-direction: column; gap: 4px; justify-content: center;
+  }
+  .guard .k { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+  .guard p { margin: 0; font-size: 12px; color: #6b5a38; }
+
+  /* tools */
+  .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .tool {
+    background: var(--paper); border: 1px solid var(--border); border-left: 3px solid var(--sap);
+    border-radius: 10px; padding: 12px 13px;
+  }
+  .tool code { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--sap-deep); }
+  .tool p { margin: 5px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .tool.stretch { border-left-color: var(--amber); opacity: .9; }
+  .tool.stretch code { color: var(--amber); }
+  .databar {
+    margin-top: 10px; font-family: var(--mono); font-size: 11.5px;
+    color: var(--muted); display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; background: #F1F5EF; border: 1px dashed var(--line); border-radius: 8px;
+  }
+  .databar b { color: var(--ink); font-weight: 700; }
+
+  /* connectors */
+  .conn { grid-column: 2 / 3; display: flex; justify-content: center; padding: 7px 0; }
+  .conn .stem { width: 2px; height: 20px; background: var(--line); position: relative; }
+  .conn .stem::after {
+    content: ""; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+    border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--line);
+  }
+  .conn.bi .stem::before {
+    content: ""; position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+    border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 6px solid var(--line);
+  }
+  .conn .lbl {
+    align-self: center; font-family: var(--mono); font-size: 10px; color: var(--muted);
+    margin-left: 8px; letter-spacing: .04em;
+  }
+  .conn-wrap { display:flex; align-items:center; justify-content:center; gap: 4px; }
+
+  .diagram-scroll { overflow-x: auto; }
+  .diagram-inner { min-width: 640px; }
+
+  /* ---- why best ---- */
+  .why { margin-top: 52px; }
+  .why h2 { font-size: 24px; letter-spacing: -.02em; margin: 0 0 6px; }
+  .why .sub { color: var(--muted); margin: 0 0 24px; font-size: 15px; }
+
+  .formula {
+    font-family: var(--mono); font-size: clamp(13px, 2.4vw, 16px); font-weight: 600;
+    background: var(--ink); color: #EAF1E6; border-radius: 12px;
+    padding: 18px 20px; overflow-x: auto; white-space: nowrap; letter-spacing: .01em;
+    box-shadow: var(--shadow); margin-bottom: 26px;
+  }
+  .formula .w-acc { color: #7BE0A0; }
+  .formula .w-spd { color: #7DC4EF; }
+  .formula .w-eff { color: #C3AEF2; }
+  .formula .w-pen { color: #F0A188; }
+
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .card {
+    background: var(--paper); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 19px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px;
+  }
+  .card .head { display: flex; align-items: center; gap: 10px; }
+  .weight {
+    font-family: var(--mono); font-size: 12px; font-weight: 700; color: #fff;
+    padding: 3px 9px; border-radius: 7px; letter-spacing: .02em;
+  }
+  .w-a { background: var(--acc-accuracy); }
+  .w-s { background: var(--acc-speed); }
+  .w-e { background: var(--acc-effic); }
+  .w-b { background: var(--amber); }
+  .card h3 { margin: 0; font-size: 15.5px; letter-spacing: -.01em; }
+  .card p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .card p b { color: var(--ink); font-weight: 650; }
+
+  .kicker {
+    margin-top: 30px; background: linear-gradient(180deg,#F4FAF2,#fff);
+    border: 1px solid #CDE4CC; border-left: 4px solid var(--sap);
+    border-radius: 12px; padding: 18px 20px;
+  }
+  .kicker h3 { margin: 0 0 6px; font-size: 16px; }
+  .kicker p { margin: 0; font-size: 14px; color: #37493d; }
+  .kicker b { color: var(--sap-deep); }
+
+  footer { margin-top: 40px; font-size: 12.5px; color: var(--muted); font-family: var(--mono); }
+
+  @media (max-width: 620px) {
+    .layer { grid-template-columns: 1fr; gap: 8px; }
+    .layer-label { text-align: left; }
+    .conn { grid-column: 1 / 2; }
+    .orch-row { grid-template-columns: 1fr; }
+    .tools { grid-template-columns: 1fr; }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .node, .tool, .card { transition: transform .15s ease, box-shadow .15s ease; }
+    .card:hover { transform: translateY(-2px); }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Africa Deep Tech Challenge 2026 · Agriculture Track</div>
+    <h1>Shamba Planner <span class="dim">— system architecture</span></h1>
+    <p class="lede">An offline whole-plot planning agent for African smallholders. A tiny language model handles understanding; deterministic tools own every number. Runs entirely on a $200 laptop, no internet.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span>llama.cpp + GGUF</span>
+      <span class="chip warn"><span class="dot"></span>≤ 7 GB RAM ceiling</span>
+      <span class="chip warn"><span class="dot"></span>CPU-only · no GPU</span>
+      <span class="chip"><span class="dot"></span>Zero network at judging</span>
+      <span class="chip warn"><span class="dot"></span>cores &lt; 85 °C</span>
+    </div>
+  </header>
+
+  <div class="frame">
+    <span class="frame-tag">◱ everything below lives inside 7 GB of RAM</span>
+    <div class="diagram-scroll">
+     <div class="diagram-inner">
+      <div class="diagram">
+
+        <!-- INPUT -->
+        <div class="layer">
+          <div class="layer-label">Input</div>
+          <div class="node output">
+            <span class="tag">local language</span>
+            <h3>Farmer request</h3>
+            <p>“I have half an acre, one bag of urea, and I want maize and beans this season.”</p>
+          </div>
+        </div>
+
+        <div class="layer"><div></div><div class="conn"><div class="stem"></div></div></div>
+
+        <!-- MODEL -->
+        <div class="layer">
+          <div class="layer-label">Inference<br>core</div>
+          <div class="node model">
+            <span class="tag">~2 GB · CPU</span>
+            <h3>llama.cpp · small GGUF model</h3>
+            <p>Qwen2.5-3B-Instruct Q4_K_M (fallbacks: 1.5B / Gemma-2-2B). The only “AI” in the system — it understands intent and phrases answers. It is never trusted with arithmetic.</p>
+          </div>
+        </div>
+
+        <div class="layer"><div></div><div class="conn bi"><div class="stem"></div><span class="lbl">plan ⇄ observe</span></div></div>
+
+        <!-- ORCHESTRATOR + GUARD -->
+        <div class="layer">
+          <div class="layer-label">Agent<br>orchestrator</div>
+          <div class="orch-row">
+            <div class="node orch">
+              <h3>Capped ReAct loop</h3>
+              <p>Reads the request, plans, calls tools in sequence, observes results, decides the next step. Hard-limited to 3–4 steps and a fixed context window.</p>
+            </div>
+            <div class="guard">
+              <span class="k">◆ Grammar guard</span>
+              <p>GBNF grammar forces every tool call to be valid JSON. The tiny model <b>cannot</b> emit a malformed call — this is what makes an agent loop survivable on a 3B model.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer"><div></div><div class="conn"><div class="stem"></div><span class="lbl">structured calls</span></div></div>
+
+        <!-- TOOLS -->
+        <div class="layer">
+          <div class="layer-label">Tool layer<br><span style="color:var(--sap-deep)">deterministic</span></div>
+          <div>
+            <div class="tools">
+              <div class="tool">
+                <code>intercrop_planner()</code>
+                <p>Per-crop spacing &amp; layout for a valid mixed planting.</p>
+              </div>
+              <div class="tool">
+                <code>input_allocator()</code>
+                <p>Splits the fertilizer / manure you actually have across crops — legume N-credit aware.</p>
+              </div>
+              <div class="tool">
+                <code>planting_scheduler()</code>
+                <p>Risk-staggered planting dates from bundled rainfall history.</p>
+              </div>
+            </div>
+            <div class="tools" style="margin-top:12px;">
+              <div class="tool stretch">
+                <code>pest_advisor()</code>
+                <p>Push-pull (desmodium + napier) pest &amp; striga control. <b>Stretch module.</b></p>
+              </div>
+              <div class="databar" style="grid-column: span 2; margin-top:0;">
+                <span>▤</span><b>Bundled offline data</b> — historical rainfall tables, agronomic constants. Ships in the repo; needs no network.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer"><div></div><div class="conn bi"><div class="stem"></div><span class="lbl">exact numbers back</span></div></div>
+
+        <!-- COMPOSE + LOCALISE -->
+        <div class="layer">
+          <div class="layer-label">Compose</div>
+          <div class="node">
+            <span class="tag">pluggable locale</span>
+            <h3>Answer composer + localisation layer</h3>
+            <p>Model turns the tools’ exact numbers into a plain, friendly answer — routed through a swappable locale module (Swahili / Hausa / … chosen after testing).</p>
+          </div>
+        </div>
+
+        <div class="layer"><div></div><div class="conn"><div class="stem"></div></div></div>
+
+        <!-- OUTPUT -->
+        <div class="layer">
+          <div class="layer-label">Output</div>
+          <div class="node output">
+            <span class="tag">no network</span>
+            <h3>Local UI</h3>
+            <p>Minimal FastAPI + static HTML (or TUI). Nothing loads from a CDN or the internet.</p>
+          </div>
+        </div>
+
+      </div>
+     </div>
+    </div>
+  </div>
+
+  <p style="font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:14px;">
+    ↺ Wrapping everything: a <b style="color:var(--ink)">profiler / benchmark harness</b> measures accuracy, tokens/sec, peak RAM &amp; temperature under a RAM-capped emulation of the target laptop — so numbers on your dev machine stay honest.
+  </p>
+
+  <!-- WHY BEST -->
+  <section class="why">
+    <h2>Why this is the best architecture</h2>
+    <p class="sub">The judging formula quietly rewards a specific shape of system. This one is built backwards from it.</p>
+
+    <div class="formula">
+      S = <span class="w-acc">0.50 · Accuracy</span> + <span class="w-spd">0.30 · Speed</span> + <span class="w-eff">0.20 · Efficiency</span> − <span class="w-pen">Thermal</span>
+      &nbsp;&nbsp;(+15% local language, +10% budget profile)
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="head"><span class="weight w-a">50% Accuracy</span></div>
+        <h3>Correctness is offloaded to code</h3>
+        <p>Spacing, fertilizer splits and planting windows come from <b>deterministic tools</b>, not a 3B model guessing. Your biggest score is near-guaranteed — the failure mode that sinks Math, Healthcare and Creative entries is designed out.</p>
+      </div>
+      <div class="card">
+        <div class="head"><span class="weight w-s">30% Speed</span></div>
+        <h3>Small model, short hops</h3>
+        <p>A ~2 GB Q4 model on CPU plus a <b>capped</b> loop means few passes and short contexts. The reason the pure “Autonomous Agents” track loses here — runaway multi-step loops — is bounded on purpose.</p>
+      </div>
+      <div class="card">
+        <div class="head"><span class="weight w-e">20% Efficiency</span></div>
+        <h3>Lives inside 7 GB, stays cool</h3>
+        <p>Fixed context window + depth cap keep peak RAM and heat predictable, protecting against the instant-disqualify OOM and the <b>thermal penalty</b>. The benchmark harness proves it under emulation.</p>
+      </div>
+      <div class="card">
+        <div class="head"><span class="weight w-b">+25% Bonuses</span></div>
+        <h3>Both bonuses are the product</h3>
+        <p>The pluggable locale layer earns <b>+15%</b> local language; planning around scarce, affordable inputs <b>is</b> the +10% budget profile. Four orchestrated tools give the cross-disciplinary <b>Best Integration</b> story.</p>
+      </div>
+    </div>
+
+    <div class="kicker">
+      <h3>The one idea underneath all of it</h3>
+      <p>Everyone else will ship a <b>farming chatbot</b> and gamble the 50% accuracy score on a tiny model’s knowledge. We ship an <b>agent that thinks in language but calculates in code</b> — so the model only does what small models are good at, and the rubric’s math stays on our side. Offline isn’t a rule we tolerate; for a rural farmer with no signal, it’s the entire point.</p>
+    </div>
+  </section>
+
+  <footer>Shamba Planner · draft architecture · 2026-07-03 · v0.1</footer>
+</div>
