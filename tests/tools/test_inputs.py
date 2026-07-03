@@ -37,3 +37,8 @@ def test_empty_crops_raises():
 def test_duplicate_crops_raises():
     with pytest.raises(ValueError, match="duplicate crops"):
         input_allocator(1000, ["maize", "maize"], urea_kg=5)
+
+def test_inputs_accepts_value_unit():
+    r = input_allocator(crops=["maize", "beans"], urea_kg=25, area_value=0.2, area_unit="hectare")
+    expected = input_allocator(2000, ["maize", "beans"], urea_kg=25)
+    assert r["required_n_kg"] == expected["required_n_kg"]

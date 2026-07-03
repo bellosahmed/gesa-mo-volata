@@ -1,12 +1,17 @@
 from gesa.agronomy import SPACING, LEGUME_N_CREDIT_KG_HA
+from gesa.units import resolve_area_m2
 
 UREA_N_FRACTION = 0.46
 
-def input_allocator(area_m2: float, crops: list[str], urea_kg: float) -> dict:
+def input_allocator(area_m2=None, crops=None, urea_kg=None, area_value=None, area_unit=None) -> dict:
     """Allocate available urea across crops in proportion to nitrogen need.
 
     Applies legume N-credit to intercropped non-legumes and flags whether the available nitrogen is sufficient.
     """
+    area_m2 = resolve_area_m2(area_m2, area_value, area_unit)
+    if urea_kg is None:
+        raise ValueError("urea_kg is required")
+    crops = crops or []
     for c in crops:
         if c not in SPACING:
             raise ValueError(f"unknown crop: {c!r}")

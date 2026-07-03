@@ -9,6 +9,8 @@ def _system(lang: str) -> str:
     return (
         "You are a farm planning assistant. Respond ONLY with one JSON tool call. "
         f"Tools: {signatures}. "
+        "For plot size, provide area_value and area_unit (e.g. 0.5 and \"acre\") exactly as stated in the request; "
+        "do NOT convert to square metres yourself. "
         'When done, use {"tool":"final","args":{"answer":"..."}}. '
         f"Write the final answer in {language}.\n"
     )

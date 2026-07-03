@@ -27,3 +27,8 @@ def test_empty_crops_raises():
 def test_duplicate_crops_raises():
     with pytest.raises(ValueError):
         intercrop_planner(1000, ["maize", "maize"])
+
+def test_intercrop_accepts_value_unit():
+    r = intercrop_planner(crops=["maize", "beans"], area_value=0.5, area_unit="acre")
+    assert r["area_m2"] == pytest.approx(2023.43, rel=1e-4)
+    assert r["compatible"] is True
