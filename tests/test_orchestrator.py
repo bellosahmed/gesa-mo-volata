@@ -86,3 +86,35 @@ def test_missing_arg_recovers():
     r = run("x", FakeModel(scripted))
     assert r["steps"] == []
     assert r["answer"] == "recovered"
+
+def test_advisory_planting_windows_appended():
+    scripted = [
+        json.dumps({"tool": "planting_scheduler", "args": {"region": "east_africa", "season": "long_rains"}}),
+        json.dumps({"tool": "final", "args": {"answer": "ok"}}),
+    ]
+    r = run("when do I plant?", FakeModel(scripted))
+    assert "3 staggered windows" in r["answer"]
+
+def test_advisory_insufficient_urea_appended():
+    scripted = [
+        json.dumps({"tool": "input_allocator", "args": {"area_m2": 4046.86, "crops": ["maize"], "urea_kg": 1}}),
+        json.dumps({"tool": "final", "args": {"answer": "ok"}}),
+    ]
+    r = run("how much urea?", FakeModel(scripted))
+    assert "You need more urea for this plan." in r["answer"]
+
+def test_no_advisory_when_not_applicable():
+    scripted = [
+        json.dumps({"tool": "intercrop_planner", "args": {"area_m2": 1000, "crops": ["maize", "beans"]}}),
+        json.dumps({"tool": "final", "args": {"answer": "ok"}}),
+    ]
+    r = run("intercrop plan", FakeModel(scripted))
+    assert r["answer"] == "ok"
+
+def test_system_prompt_lists_scheduler_regions_and_example():
+    scripted = [json.dumps({"tool": "final", "args": {"answer": "done"}})]
+    m = RecordingModel(scripted)
+    run("hello", m)
+    assert "east_africa" in m.prompts[0]
+    assert "long_rains" in m.prompts[0]
+    assert "Example" in m.prompts[0]
