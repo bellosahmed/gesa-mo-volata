@@ -1,0 +1,9 @@
+{
+  "sahel": {
+    "long_rains": {"onset_week": "2026-06-15", "std_days": 10}
+  },
+  "east_africa": {
+    "long_rains": {"onset_week": "2026-03-10", "std_days": 12},
+    "short_rains": {"onset_week": "2026-10-15", "std_days": 9}
+  }
+}
