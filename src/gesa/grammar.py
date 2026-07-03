@@ -1,7 +1,7 @@
 from gesa.tools.registry import TOOLS
 
 def build_tool_grammar() -> str:
-    names = " | ".join(f'"{n}"' for n in TOOLS)
+    names = " | ".join(f'"\\"{n}\\""' for n in TOOLS)
     return f'''
 root   ::= "{{" ws "\\"tool\\"" ws ":" ws toolname ws "," ws "\\"args\\"" ws ":" ws object ws "}}"
 toolname ::= {names}
