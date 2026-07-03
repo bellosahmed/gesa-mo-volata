@@ -19,7 +19,7 @@ def test_single_tool_then_final():
 def test_step_cap_enforced():
     loop = json.dumps({"tool": "planting_scheduler", "args": {"region": "east_africa", "season": "long_rains"}})
     r = run("x", FakeModel([loop] * 10), max_steps=2)
-    assert len(r["steps"]) <= 2
+    assert len(r["steps"]) == 2
 
 class RecordingModel:
     """Fake model that records the prompt of each call and returns scripted output."""
@@ -51,3 +51,38 @@ def test_system_prompt_lists_all_registered_tools():
     run("hello", m)
     for name in TOOLS:
         assert name in m.prompts[0]
+
+def test_system_prompt_includes_arg_names():
+    import json
+    scripted = [json.dumps({"tool": "final", "args": {"answer": "done"}})]
+    m = RecordingModel(scripted)
+    run("hello", m)
+    assert "area_m2" in m.prompts[0]
+    assert "region" in m.prompts[0]
+
+def test_malformed_json_does_not_crash():
+    scripted = [
+        "not json",
+        json.dumps({"tool": "final", "args": {"answer": "recovered"}}),
+    ]
+    r = run("x", FakeModel(scripted))
+    assert r["steps"] == []
+    assert r["answer"] == "recovered"
+
+def test_unknown_crop_recovers():
+    scripted = [
+        json.dumps({"tool": "intercrop_planner", "args": {"area_m2": 1000, "crops": ["mango"]}}),
+        json.dumps({"tool": "final", "args": {"answer": "recovered"}}),
+    ]
+    r = run("x", FakeModel(scripted))
+    assert r["steps"] == []
+    assert r["answer"] == "recovered"
+
+def test_missing_arg_recovers():
+    scripted = [
+        json.dumps({"tool": "intercrop_planner", "args": {"area_m2": 1000}}),
+        json.dumps({"tool": "final", "args": {"answer": "recovered"}}),
+    ]
+    r = run("x", FakeModel(scripted))
+    assert r["steps"] == []
+    assert r["answer"] == "recovered"

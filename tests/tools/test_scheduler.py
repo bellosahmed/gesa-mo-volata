@@ -10,3 +10,7 @@ def test_three_staggered_windows():
 def test_unknown_region_raises():
     with pytest.raises(KeyError):
         planting_scheduler("atlantis", "long_rains")
+
+def test_unknown_season_raises():
+    with pytest.raises(KeyError):
+        planting_scheduler("east_africa", "monsoon")

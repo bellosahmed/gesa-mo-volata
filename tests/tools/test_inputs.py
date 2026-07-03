@@ -29,3 +29,11 @@ def test_unknown_crop_raises():
     # Attempting to use an unknown crop should raise ValueError
     with pytest.raises(ValueError, match="unknown crop"):
         input_allocator(1000, ["mango"], urea_kg=5)
+
+def test_empty_crops_raises():
+    with pytest.raises(ValueError, match="crops must not be empty"):
+        input_allocator(1000, [], urea_kg=5)
+
+def test_duplicate_crops_raises():
+    with pytest.raises(ValueError, match="duplicate crops"):
+        input_allocator(1000, ["maize", "maize"], urea_kg=5)

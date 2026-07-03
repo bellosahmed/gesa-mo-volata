@@ -1,10 +1,12 @@
 import json, os
 from datetime import date, timedelta
 
-DEFAULT = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "rainfall", "onset.json")
+_MODULE_DIR = os.path.dirname(__file__)
+DEFAULT = os.path.join(_MODULE_DIR, "..", "..", "..", "data", "rainfall", "onset.json")
 
 def planting_scheduler(region: str, season: str, data_path: str = DEFAULT) -> dict:
-    with open(os.path.abspath(data_path)) as fh:
+    resolved = data_path if os.path.isabs(data_path) else os.path.join(_MODULE_DIR, data_path)
+    with open(resolved) as fh:
         data = json.load(fh)
     entry = data[region][season]  # KeyError if unknown
     onset = date.fromisoformat(entry["onset_week"])

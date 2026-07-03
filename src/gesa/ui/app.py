@@ -19,7 +19,12 @@ class PlanReq(BaseModel):
 def _get_model():
     global _model
     if _model is None:
-        _model = LlamaModel(os.environ["GESA_MODEL"])
+        model_path = os.environ.get("GESA_MODEL")
+        if not model_path:
+            raise RuntimeError(
+                "GESA_MODEL environment variable is not set; point it at a .gguf model file"
+            )
+        _model = LlamaModel(model_path)
     return _model
 
 @app.get("/")

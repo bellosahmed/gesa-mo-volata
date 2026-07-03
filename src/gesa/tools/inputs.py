@@ -10,6 +10,10 @@ def input_allocator(area_m2: float, crops: list[str], urea_kg: float) -> dict:
     for c in crops:
         if c not in SPACING:
             raise ValueError(f"unknown crop: {c!r}")
+    if not crops:
+        raise ValueError("crops must not be empty")
+    if len(crops) != len(set(crops)):
+        raise ValueError(f"duplicate crops: {crops}")
     ha = area_m2 / 10000.0
     has_legume = any(SPACING[c]["legume"] for c in crops)
     needs = {}
