@@ -15,3 +15,15 @@ def test_incompatible_pair_flagged():
 def test_unknown_crop_raises():
     with pytest.raises(ValueError):
         intercrop_planner(1000, ["maize", "quinoa"])
+
+def test_single_crop_is_compatible():
+    r = intercrop_planner(1000, ["maize"])
+    assert r["compatible"] is True
+
+def test_empty_crops_raises():
+    with pytest.raises(ValueError):
+        intercrop_planner(1000, [])
+
+def test_duplicate_crops_raises():
+    with pytest.raises(ValueError):
+        intercrop_planner(1000, ["maize", "maize"])
