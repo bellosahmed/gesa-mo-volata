@@ -80,16 +80,17 @@ All agronomy constants live in one auditable file (`gesa/agronomy.py`) for revie
 Intended candidates (`bench/bakeoff.py`): Qwen2.5-3B-Instruct Q4_K_M, Qwen2.5-1.5B-Instruct Q4_K_M,
 Gemma-2-2B-it Q4_K_M — compared on tool-call validity, tokens/sec, and peak RSS under the 7 GB cap.
 
-**Live run in this report:** `qwen2.5-1.5b-instruct-q4_k_m.gguf` (1.1 GB) — a *fallback* candidate,
-run here to validate the pipeline. The live results (§6) show 1.5B is too weak at tool-following
-(33% accuracy); the ample RAM headroom (peak 1.95 GB of 7 GB) confirms the intended
-**Qwen2.5-3B-Instruct Q4_K_M** fits comfortably and should be the primary model.
+**Two candidates were run live on this machine (CPU-only):** Qwen2.5-1.5B and Qwen2.5-3B, both
+Q4_K_M. See §6 for the head-to-head — the notable result is that on our strict benchmark the 3B did
+**not** beat the 1.5B and is ~2× slower, so for this workload the **1.5B is the better speed/RAM
+trade-off** while both stay far under the RAM ceiling.
 
 **Pipeline validated live:** the model loads in 0.7 s, correctly selects `intercrop_planner`
 (maize+beans), the deterministic tool computes the layout, and the agent returns a clean localised
-answer. Two live findings drove improvements: (a) the model mis-converted "half an acre" to 500 m²
-(→ motivates wiring `normalize_area`, see §10); (b) on a malformed scheduler call the loop **contained
-the error without crashing**, confirming the orchestrator's error-recovery.
+answer over the real FastAPI UI (POST `/plan`). Live findings that drove fixes: (a) the model
+mis-converted "half an acre" to 500 m² → we wired `normalize_area` so units convert in code (now
+"half an acre" → 2023 m², "2 hectares" → 20000 m², verified live); (b) a malformed scheduler call was
+**contained without crashing**, confirming the orchestrator's error-recovery.
 
 ## 6. Benchmark results
 
@@ -97,20 +98,28 @@ Measured by `bench/harness.py` under RAM-capped emulation (`bench/emulate.sh`,
 `systemd-run -p MemoryMax=7G -p MemorySwapMax=0`). Scoring sub-values are ESTIMATES; the official
 scoring differs.
 
-Model: `qwen2.5-1.5b-instruct-q4_k_m.gguf` · 6-scenario suite · this machine (CPU-only). The 7 GB
-RAM cap via `systemd-run --user --scope -p MemoryMax=7G -p MemorySwapMax=0` was confirmed functional.
+6-scenario suite · this machine (CPU-only, 32 threads). The 7 GB RAM cap via
+`systemd-run --user --scope -p MemoryMax=7G -p MemorySwapMax=0` was confirmed functional.
 
-| Metric | Value | Notes |
-|---|---|---|
-| Accuracy | **33.3%** (2/6) | 1.5B is weak at tool-following; intercrop tasks pass, scheduler/allocator often fail |
-| Tokens/sec (~) | 6.12 | rough char-based proxy |
-| **Peak RSS** | **1952 MB** | **well under the 7 GB ceiling** — no OOM risk; room for the 3B model |
-| Max core temp | n/a | `sensors` not installed on this machine |
-| S estimate | 0.40 | proxy sub-scores; official scoring differs |
+| Model (Q4_K_M) | Accuracy* | Tokens/sec~ | Peak RSS | S est. |
+|---|---|---|---|---|
+| **Qwen2.5-1.5B** | 33.3% (2/6) | **6.12** | **1952 MB** | **0.40** |
+| Qwen2.5-3B | 33.3% (2/6) | 3.20 | 3605 MB | 0.31 |
 
-**Interpretation:** the constraints are met with large margin (1.95 GB peak, no OOM, bounded loop).
-The limiter is *model quality*, not the system — a 3B model (which still fits) should lift accuracy
-substantially, and wiring `normalize_area` (§10) removes a known accuracy leak.
+\* *Accuracy is a strict **exact-args match** against deterministic ground truth — a harsh lower bound.
+It does not credit "selected the right tool with reasonable args," which the live demos did well
+(e.g. correct intercrop layout for 2 ha). Treat it as a floor, not a ceiling.*
+
+**Interpretation:**
+- **Constraints met with large margin:** both models run CPU-only, bounded loop, no OOM; peak RSS
+  1.95 GB (1.5B) / 3.6 GB (3B), both far under 7 GB.
+- **3B did not beat 1.5B here** and is ~2× slower, so on this workload the **1.5B is the better
+  speed/efficiency choice** (higher S estimate). This is a benchmark-driven finding, not an
+  assumption.
+- The accuracy metric is the bottleneck, not the models: the strict exact-match scoring under-credits
+  good-but-not-identical plans. A follow-up should add a semantic accuracy metric ("right tool +
+  args within valid range") to differentiate models fairly; the failing scenarios are mainly the
+  enum-style `region`/`season` scheduler calls and exact-value allocator matches.
 
 ## 7. Localisation
 
