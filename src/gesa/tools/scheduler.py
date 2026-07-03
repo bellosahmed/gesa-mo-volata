@@ -15,3 +15,10 @@ def planting_scheduler(region: str, season: str, data_path: str = DEFAULT) -> di
     windows = [{"label": lbl, "start": (onset + timedelta(days=d)).isoformat(), "share_pct": pct}
                for d, lbl, pct in offsets]
     return {"region": region, "season": season, "onset_week": entry["onset_week"], "windows": windows}
+
+def available_regions_seasons(data_path: str = DEFAULT) -> dict:
+    """Return {region: [seasons]} from the bundled rainfall data."""
+    resolved = data_path if os.path.isabs(data_path) else os.path.join(_MODULE_DIR, data_path)
+    with open(resolved) as fh:
+        data = json.load(fh)
+    return {region: list(seasons) for region, seasons in data.items()}

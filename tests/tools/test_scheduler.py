@@ -1,5 +1,10 @@
 import pytest
-from gesa.tools.scheduler import planting_scheduler
+from gesa.tools.scheduler import planting_scheduler, available_regions_seasons
+
+def test_available_regions_seasons():
+    r = available_regions_seasons()
+    assert "long_rains" in r["east_africa"]
+    assert "sahel" in r
 
 def test_three_staggered_windows():
     r = planting_scheduler("east_africa", "long_rains")
