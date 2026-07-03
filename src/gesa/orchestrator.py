@@ -1,14 +1,20 @@
 import json
 from gesa.grammar import build_tool_grammar
-from gesa.tools.registry import dispatch
+from gesa.locale import t
+from gesa.tools.registry import TOOLS, dispatch
 
-SYSTEM = ("You are a farm planning assistant. Respond ONLY with one JSON tool call. "
-          "Tools: intercrop_planner, input_allocator, planting_scheduler. "
-          "When done, use {\"tool\":\"final\",\"args\":{\"answer\":\"...\"}}.\n")
+def _system(lang: str) -> str:
+    language = t("answer_language", lang=lang)
+    return (
+        "You are a farm planning assistant. Respond ONLY with one JSON tool call. "
+        f"Tools: {', '.join(TOOLS)}. "
+        'When done, use {"tool":"final","args":{"answer":"..."}}. '
+        f"Write the final answer in {language}.\n"
+    )
 
-def run(request: str, model, max_steps: int = 4) -> dict:
+def run(request: str, model, max_steps: int = 4, lang: str = "en") -> dict:
     grammar = build_tool_grammar()
-    steps, transcript = [], f"{SYSTEM}Request: {request}\n"
+    steps, transcript = [], f"{_system(lang)}Request: {request}\n"
     answer = ""
     for _ in range(max_steps):
         raw = model.complete(transcript, grammar=grammar)

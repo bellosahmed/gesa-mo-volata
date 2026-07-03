@@ -28,4 +28,4 @@ def index():
 
 @app.post("/plan")
 def plan(req: PlanReq):
-    return run(req.request, _get_model())
+    return run(req.request, _get_model(), lang=req.lang)
