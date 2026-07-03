@@ -11,3 +11,7 @@ def test_grammar_has_root_and_object_rules():
     g = build_tool_grammar()
     assert "root" in g
     assert "object" in g
+
+def test_grammar_allows_final_control_tool():
+    g = build_tool_grammar()
+    assert '\\"final\\"' in g
