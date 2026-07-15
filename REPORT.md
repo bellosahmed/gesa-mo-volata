@@ -1,6 +1,7 @@
 # Gesa Mo Volata — ADTC 2026 Report
 
-**Track:** Agriculture · **Challenge:** Africa Deep Tech Challenge 2026 (The Laptop LLM Challenge)
+**Domain:** `agriculture` · **Model:** Qwen2.5-1.5B-Instruct-Q4_K_M (llama.cpp, GGUF) ·
+**Challenge:** Africa Deep Tech Challenge 2026 (The Laptop LLM Challenge)
 
 An offline whole-plot planning agent for African smallholder farmers. A small quantized
 language model interprets a farmer's request; deterministic Python tools compute all the
@@ -106,6 +107,24 @@ scoring differs.
 | **Qwen2.5-1.5B** | 33.3% (2/6) | **6.12** | **1952 MB** | **0.40** |
 | Qwen2.5-3B | 33.3% (2/6) | 3.20 | 3605 MB | 0.31 |
 
+**Full run *under* the active 7 GB cap** (Qwen2.5-1.5B, whole 6-scenario agent suite inside the
+`systemd-run` scope, no swap): completed with **no OOM**, strict accuracy 50% (3/6), ~2.7 agent-loop
+tokens/sec, **peak RSS 1286 MB** — ~18% of the ceiling.
+
+**Official ADTC profiler** (`adtc-profiler 0.1.0`, participant mode, `--skip-accuracy`,
+`measured_on: participant_laptop`) on this submission's `metadata.json` + `download_model.sh`:
+
+| Metric | Value |
+|---|---|
+| Generation speed (llama-bench) | 33.44 t/s |
+| First-token latency (pp512) | 2607 ms |
+| Peak RSS | 1828 MB |
+| Core temp peak | **68.4 °C — no throttling** |
+| CPU p99 | 77.9% |
+
+(The profiler's 33.4 t/s is raw single-pass generation; the harness's ~3–6 t/s is end-to-end
+*agent-loop* throughput including multiple model calls and tool execution — different quantities.)
+
 \* *Accuracy is a strict **exact-args match** against deterministic ground truth — a harsh lower bound.
 It does not credit "selected the right tool with reasonable args," which the live demos did well
 (e.g. correct intercrop layout for 2 ha). Treat it as a floor, not a ceiling.*
@@ -134,9 +153,14 @@ strings are placeholders and must be verified by a native Fulfulde speaker befor
 - [x] CPU-only — `n_gpu_layers=0`; no GPU/discrete-graphics path.
 - [x] Inference via llama.cpp + GGUF only; open base model (Qwen2.5).
 - [x] Bounded work per request — hard step cap + fixed context window.
-- [x] Peak RAM < 7 GB — **verified: 1952 MB peak** (§6); 7 GB `systemd-run` cap confirmed functional.
-- [ ] Cores < 85 °C under sustained use — `sensors` unavailable on this machine; measure on target laptop.
-- [x] Deliverables: open-source repo, this REPORT.md, demo, 2-minute video.
+- [x] Peak RAM < 7 GB — **verified: 1286 MB peak for the full agent suite run *inside* the active
+  7 GB `systemd-run` cap** (§6); official profiler measured 1828 MB peak RSS.
+- [x] Cores < 85 °C — official ADTC profiler measured **68.4 °C peak, no throttling** on this dev
+  machine; re-confirm on the target-profile laptop.
+- [x] Official submission layout — `metadata.json`, `download_model.sh` (idempotent, public URL),
+  `model/` gitignored, MIT `LICENSE`; validated end-to-end with `adtc-profiler run --mode participant`
+  (valid `submission.json` produced).
+- [x] Deliverables: open-source repo (MIT), this REPORT.md, demo UI; 2-minute video pending.
 
 ## 9. Engineering method
 
@@ -153,9 +177,8 @@ missing agent-loop error containment.
 
 **Remaining before final submission:**
 - Verify Fulfulde locale strings with a native speaker.
-- Emit key advisory lines (e.g. insufficient-urea, planting-window count) via the locale layer
-  deterministically, rather than relying on model phrasing.
-- Improve reliability of enum-style args (`region`/`season`) — the 1.5B fallback failed the scheduler
-  call; expected to improve with the 3B primary model and richer prompt examples.
-- Run the full 3-model bake-off and the benchmark on the actual target-profile laptop; capture the
-  UI screenshots and the 2-minute demo video.
+- Register on the ADTF portal and fill the real `team_id` into `metadata.json`.
+- Re-run `adtc-profiler` and the harness on the actual target-profile laptop (4 vCPU / 8 GB); capture
+  the UI screenshots and the 2-minute demo video.
+- Optional: add a semantic accuracy metric ("right tool + args within valid range") — the strict
+  exact-match metric under-credits good plans (§6).

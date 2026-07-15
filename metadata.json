@@ -1,0 +1,37 @@
+{
+  "team_id": "REPLACE-WITH-ADTF-PORTAL-TEAM-ID",
+  "domain": "agriculture",
+  "language_scope": ["en", "ff"],
+  "african_alpha_claim": true,
+  "budget_laptop_claim": true,
+  "submitter": {
+    "name": "FILL-BEFORE-SUBMISSION",
+    "email": "FILL-BEFORE-SUBMISSION",
+    "github_handle": "bellosahmed"
+  },
+  "cross_disciplinary_pairing": {
+    "discipline": "agronomy",
+    "load_bearing": true,
+    "description": "All agronomic outputs (intercrop spacing and plant counts, urea/nitrogen allocation with legume credits, rain-onset planting windows) are computed by deterministic agronomy code the model orchestrates via tool calls; the pairing is the product, not decoration."
+  },
+  "test_prompts": [
+    {
+      "prompt_id": "tp_001",
+      "prompt": "I have half an acre and I want to plant maize and beans together on the same plot. How many plants of each crop can I fit, and what spacing should I use?"
+    },
+    {
+      "prompt_id": "tp_002",
+      "prompt": "I farm 2 hectares of maize intercropped with cowpea in the Sahel and I could only buy 10 kg of urea. How should I split the fertilizer between the crops, and when should I plant for the long rains?"
+    }
+  ],
+  "model": {
+    "name": "Qwen2.5-1.5B-Instruct-Q4_K_M",
+    "runtime": "llama.cpp",
+    "quantization": "GGUF Q4_K_M",
+    "parameters_estimate": "1.5B",
+    "packaging": "binary_bundle"
+  },
+  "_runtime": {
+    "model_path": "model/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+  }
+}

@@ -1,5 +1,19 @@
+# Model weights — never commit these to git
+model/*.gguf
+model/*.bin
+model/*.safetensors
+model/.cache/
+
+# Python
 __pycache__/
 *.pyc
 .venv/
-models/*.gguf
+
+# Local profiler output
+submission.json
+audit.json
+
 .superpowers/
+
+# Local Claude Code settings
+.claude/settings.local.json

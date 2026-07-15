@@ -12,14 +12,14 @@ files present. The real model is constructed lazily inside `run_bakeoff`,
 only for paths that actually exist on disk.
 
 The live bake-off run itself is deferred until candidate GGUF files are
-downloaded into `models/` (gitignored) -- see the task brief / README.
+downloaded into `model/` (gitignored) -- see the task brief / README.
 """
 import os
 
 from bench.harness import measure_run
 from bench.scenarios import SCENARIOS
 
-# Intended bake-off candidates (filenames relative to `models/`). These are
+# Intended bake-off candidates (filenames relative to `model/`). These are
 # the models we intend to compare; not all of them may be downloaded yet on
 # any given machine -- `run_bakeoff` skips whichever are missing.
 CANDIDATES: list[str] = [
@@ -72,13 +72,13 @@ def _print_table(results: list[dict]) -> None:
 
 
 def main():
-    models_dir = os.path.join(os.getcwd(), "models")
-    candidate_paths = [os.path.join(models_dir, name) for name in CANDIDATES]
+    model_dir = os.path.join(os.getcwd(), "model")
+    candidate_paths = [os.path.join(model_dir, name) for name in CANDIDATES]
 
     existing = [p for p in candidate_paths if os.path.exists(p)]
     if not existing:
-        print("No candidate GGUF models found in 'models/'.")
-        print("Download one or more of the following into models/ before running the bake-off:")
+        print("No candidate GGUF models found in 'model/'.")
+        print("Download one or more of the following into model/ before running the bake-off:")
         for name in CANDIDATES:
             print(f"  - {name}")
         return
